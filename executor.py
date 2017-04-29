@@ -1,17 +1,19 @@
+from function_parser import FunctionParser as Parser
 import math
 
 
 class Executor:
     def __init__(self):
+        self.parser = Parser()
         self.functions = {
             'sin': math.sin,
             'cos': math.cos,
             'tg': math.tan,
             '^': math.pow,
-            '+': Executor.sum,
-            '-': Executor.diff,
-            '*': Executor.prod,
-            '/': Executor.div,
+            '+': lambda a, b: a + b,
+            '-': lambda a, b: a - b,
+            '*': lambda a, b: a * b,
+            '/': lambda a, b: a / b,
         }
         self.end_function = None
         self.equations = []
@@ -20,7 +22,10 @@ class Executor:
         self.equations.append(equation)
 
     def remove(self, index):
-        del self.equations[index]
+        try:
+            del self.equations[int(index)]
+        except TypeError:
+            print("Index out of range")
 
     def clear(self):
         self.equations.clear()
@@ -30,22 +35,6 @@ class Executor:
 
     def execute(self):
         pass
-
-    @staticmethod
-    def sum(x, y):
-        return x + y
-
-    @staticmethod
-    def diff(x, y):
-        return x - y
-
-    @staticmethod
-    def prod(x, y):
-        return x * y
-
-    @staticmethod
-    def div(x, y):
-        return x / y
 
 if __name__ == "__main__":
     pass
