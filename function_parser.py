@@ -1,5 +1,4 @@
 import re
-from iterator import forEach
 
 
 class FunctionParser:
@@ -57,39 +56,27 @@ class FunctionParser:
         u""":param expression is string representing equation
             :return list of list of list (and so on) of expression,
                     where the deepest list represent equation,
-                    in which first element is function and rest of them are function arguments"""
+                    in which first element is function and second is list with function arguments"""
 
         result = expression[:]
         for index, item in enumerate(result):
-            # remove empty elements
-            if item == '':
-                result.remove(item)
+            if type(item) is list:
+                result[index] = self.join(item)
 
             # join functions' braces to functions
             for f in self.functions:
                 if item == f:
                     result[index] = [result[index], result[index + 1]]
-                    del result[index+1]
+                    del result[index + 1]
                     index -= 1
 
-        print("Before")
-        for a, b in enumerate(result):
-            print(a, ": ", b)
         for symbol in self.symbols:
             for index, item in enumerate(result):
                 if item in symbol:
-                    for a, b in enumerate(result):
-                        print(a, ": ", b)
-                    result[index-1] = [result[index], result[index - 1], result[index + 1]]
-                    for a, b in enumerate(result):
-                        print(a, ": ", b)
+                    result[index - 1] = [result[index], [result[index - 1], result[index + 1]]]
                     del result[index]
-                    for a, b in enumerate(result):
-                        print(a, ": ", b)
                     del result[index]
-                    for a, b in enumerate(result):
-                        print(a, ": ", b)
-                    index += 3
+                    index -= 3
 
         return result
 
@@ -101,8 +88,19 @@ class FunctionParser:
 
         result = re.split(re.compile("([^a-zA-Z0-9.])"), expression)
         result = self.remove_empty_elements(result)
+        result = self.parse_inequalities(result)
         result = self.remove_braces(result)
-        result = forEach(result, self.join)
+        result = self.join(result)
+        return result
+
+    @staticmethod
+    def parse_inequalities(expression):
+        result = expression[:]
+        for i in range(len(result)-1, -1, -1):
+            if result[i] is '=':
+                result[i] = result[i-1]+result[i]
+                del result[i-1]
+                return result
         return result
 
 
