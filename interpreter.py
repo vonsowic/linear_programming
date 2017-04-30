@@ -12,6 +12,8 @@ class Interpreter:
             'epsilon': self.executor.set_epsilon,
             'del': self.executor.remove,
             'custom': self.executor.create_custom_function,
+            'maximize': self.set_end_func_type,
+            'multithreading': self.set_multi_threading_type,
             'execute': self.executor.execute,
             'clear': self.executor.clear,
             'show': self.show,
@@ -19,16 +21,33 @@ class Interpreter:
             'exit': exit,
         }
 
+    def set_end_func_type(self, boolean):
+        self.executor.maximize = self.set_bool_type(boolean)
+
+    def set_multi_threading_type(self, boolean):
+        self.executor.multi_threading = self.set_bool_type(boolean)
+
+    @staticmethod
+    def set_bool_type(boolean):
+        try:
+            return bool(int(boolean))
+        except ValueError:
+            print("Type 1 for true or 0 for false")
+
     def print_help(self):
+        print("Usage: <command> arg1 | arg2 | ...")
+        print("Commands:")
         for command in self.commands.keys():
-            print(command)
+            print(" - ", command)
 
     def show(self):
         print("Equations:")
         for index, item in enumerate(self.executor.equations):
             print(index, ':', item)
+        print("Maximize:", self.executor.maximize)
         print("End function:", self.executor.end_function)
         print("Epsilon:", self.executor.epsilon)
+        print("Multi threading:", self.executor.multi_threading)
 
     @staticmethod
     def unknown_command(command):
@@ -58,6 +77,5 @@ class Interpreter:
 if __name__ == "__main__":
     interpreter = Interpreter()
     while True:
-        print("\n> ", end="")
-        cmd = input()
+        cmd = input("> ")
         interpreter.execute(cmd)

@@ -10,14 +10,17 @@ class Executor:
             '+': lambda a, b: a + b,
             '-': lambda a, b: a - b,
             '*': lambda a, b: a * b,
-            '^': lambda a, b: math.pow(a, b),
+            '^': math.pow,
             '/': lambda a, b: a / b,
+            '%': lambda a, b: a % b,
             '<': lambda a, b: a < b,
             '>': lambda a, b: a > b,
             '==': lambda a, b: a == b,
             '!=': lambda a, b: a != b,
             '<=': lambda a, b: a <= b,
             '>=': lambda a, b: a >= b,
+            '!': math.factorial,
+            'sum': sum,
             'sin': math.sin,
             'asin': math.asin,
             'asinh': math.asinh,
@@ -29,7 +32,6 @@ class Executor:
             'atgh': math.atanh,
             'max': max,
             'min': min,
-            '!': math.factorial,
             'ln': math.log,
             'log': math.log,
             'log10': math.log10,
@@ -42,6 +44,8 @@ class Executor:
         self.end_function = None
         self.equations = []
         self.epsilon = 0.1
+        self.maximize = True
+        self.multi_threading = False
 
     def add(self, equation):
         self.equations.append(equation)
@@ -77,8 +81,31 @@ class Executor:
     def clear(self):
         self.equations.clear()
 
+    def get_operators(self):
+        return self.functions.keys()
+
     def get_functions(self):
         return [key for key, func in self.functions.items() if key not in self.operators]
+
+    def get_decision_variables(self, expression=None):
+        if expression is None:
+            expression = self.end_function
+
+        if type(expression) is str:
+            expression = self.parser.parse(expression)
+
+        operators = self.get_operators()
+
+        def find_operators(tmp_expression):
+            tmp = set()
+            for item in tmp_expression:
+                if type(item) is list:
+                    tmp.update(find_operators(item))
+                elif item not in operators and not item.isdigit():
+                    tmp.add(item)
+            return tmp
+
+        return find_operators(expression)
 
     def execute(self):
         pass
@@ -86,4 +113,6 @@ class Executor:
 
 if __name__ == "__main__":
     executor = Executor()
+    executor.end_function = "3*x^200+(2*y)+9*z"
+    print(executor.get_decision_variables())
 

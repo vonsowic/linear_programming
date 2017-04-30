@@ -1,11 +1,12 @@
 import re
+from iterator import forEach
 
 
 class FunctionParser:
     def __init__(self):
         self.symbols = (
             ('^',),
-            ('*', '/'),
+            ('*', '/', '%'),
             ('+', '-'),
             ('<', '>', '<=', '>=', '==', '!='),
         )
@@ -54,11 +55,12 @@ class FunctionParser:
                     in which first element is function and second is list with function arguments"""
 
         result = expression[:]
+
         for index, item in enumerate(result):
             if type(item) is list:
                 result[index] = self.join(item)
 
-            # join functions' braces to functions
+            # pack function arguments with function
             for f in self.functions:
                 if item == f:
                     result[index] = [result[index], result[index + 1]]
@@ -71,17 +73,18 @@ class FunctionParser:
                     result[index - 1] = [result[index], [result[index - 1], result[index + 1]]]
                     del result[index]
                     del result[index]
-                    index -= 3
+                    index -= 2
 
         return result
 
     def parse(self, expression):
         result = self.remove_spaces(expression)
+        result = re.split(re.compile("([^a-zA-Z0-9.])"), result)
+
         # make sure result is list
         if type(result) is not list:
             result = [result]
 
-        result = re.split(re.compile("([^a-zA-Z0-9.])"), expression)
         result = self.remove_empty_elements(result)
         result = self.parse_inequalities(result)
         result = self.remove_braces(result)
