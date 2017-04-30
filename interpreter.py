@@ -1,5 +1,6 @@
 from executor import Executor
 from sys import exit
+from function_parser import FunctionParser as Parser
 
 
 class Interpreter:
@@ -7,7 +8,10 @@ class Interpreter:
         self.executor = Executor()
         self.commands = {
             'add': self.executor.add,
+            'end': self.executor.set_end_function,
+            'epsilon': self.executor.set_epsilon,
             'del': self.executor.remove,
+            'custom': self.executor.create_custom_function,
             'execute': self.executor.execute,
             'clear': self.executor.clear,
             'show': self.show,
@@ -20,8 +24,11 @@ class Interpreter:
             print(command)
 
     def show(self):
+        print("Equations:")
         for index, item in enumerate(self.executor.equations):
             print(index, ':', item)
+        print("End function:", self.executor.end_function)
+        print("Epsilon:", self.executor.epsilon)
 
     @staticmethod
     def unknown_command(command):
@@ -35,7 +42,9 @@ class Interpreter:
         command = command.split(' ', 1)
         args = []
         if len(command) is 2:
-            args.append(command[1])
+            command[1] = Parser.remove_spaces(command[1])
+            args.extend(command[1].split('|'))
+
         command = command[0]
 
         try:

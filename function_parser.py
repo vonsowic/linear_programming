@@ -7,14 +7,9 @@ class FunctionParser:
             ('^',),
             ('*', '/'),
             ('+', '-'),
-            ('<', '>', '<=', '>='),
+            ('<', '>', '<=', '>=', '==', '!='),
         )
-        self.functions = (
-            'sin',
-            'cos',
-            'tg',
-            'ctg'
-        )
+        self.functions = []
 
     @staticmethod
     def remove_spaces(expression):
@@ -91,6 +86,7 @@ class FunctionParser:
         result = self.parse_inequalities(result)
         result = self.remove_braces(result)
         result = self.join(result)
+        result = self.remove_surplus_lists(result)
         return result
 
     @staticmethod
@@ -103,17 +99,19 @@ class FunctionParser:
                 return result
         return result
 
+    def remove_surplus_lists(self, expression):
+        if type(expression) is list:
+            if len(expression) is 1:
+                if type(expression[0]) is list:
+                    if len(expression[0]) is 1:
+                        return self.remove_surplus_lists(expression[0])
+                    else:
+                        return expression[0]
 
-if __name__ == "__main__":
-    parser = FunctionParser()
-    test_data = (
-        "3+(4+(4-23)+23) < x^2",
-        "x+3<  100",
-        "x^2 + 3*x + (4 + x*8) * x <= 100",
-        "x^3+x<99",
-        "sin(x)<0.6"
-    )
+        return expression
 
-    for data in test_data:
-        print(data + "  ->  ")
-        print(parser.parse(data))
+    def get_operators(self):
+        result = []
+        for i in self.symbols:
+            result.extend(i)
+        return result
