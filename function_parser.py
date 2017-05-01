@@ -90,6 +90,9 @@ class FunctionParser:
         result = self.remove_braces(result)
         result = self.join(result)
         result = self.remove_surplus_lists(result)
+
+        # convert numbers from string to float
+        result = forEach(result, lambda item: float(item), lambda item: item.isdigit())
         return result
 
     @staticmethod

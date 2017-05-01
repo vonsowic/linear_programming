@@ -14,7 +14,7 @@ class TestFunctionParser(TestCase):
             "x^2 + 3*x + (4 + x*8 + cos(x)) * x <= 100",
             # "x^2 + 3*x + 4 + x*8 * x <= 100",
             "x^3+x<=99",
-            "sin(x)==0.6"
+            "sin(x)==0.6",
             "sin(x1)==0.6"
         )
 

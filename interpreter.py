@@ -76,6 +76,15 @@ class Interpreter:
 
 if __name__ == "__main__":
     interpreter = Interpreter()
+    interpreter.execute("end 5*x1 + 4*x2 + 3*x3")
+    interpreter.execute("add 2*x1 + 3*x2 + x3 <= 5")
+    interpreter.execute("add 4*x1 + x2 + 2*x3 <= 11")
+    interpreter.execute("add 3*x1 + 4*x2 + 2*x3 <= 8")
+    interpreter.execute("add x1 >= 0")
+    interpreter.execute("add x2 >= 0")
+    interpreter.execute("add x3 >= 0")
+    interpreter.execute("maximize 1")
+    interpreter.execute("show")
+    interpreter.execute("execute")
     while True:
-        cmd = input("> ")
-        interpreter.execute(cmd)
+        interpreter.execute(input("> "))
