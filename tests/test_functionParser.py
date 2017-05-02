@@ -9,6 +9,8 @@ class TestFunctionParser(TestCase):
         parser.functions = executor.get_functions()
 
         test_data = (
+            "((((((x+1))))+x2))",
+            "(-1)*x1 + 3*x2 <= 12",
             "3+(4+(4-23)+23) <= x^2",
             "x+3<=  100",
             "x^2 + 3*x + (4 + x*8 + cos(x)) * x <= 100",

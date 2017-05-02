@@ -14,7 +14,7 @@ class FunctionParser:
 
     @staticmethod
     def remove_spaces(expression):
-        return ''.join(expression.split(' '))
+        return ''.join(expression.split())
 
     @staticmethod
     def remove_braces(expression):
@@ -56,6 +56,7 @@ class FunctionParser:
 
         result = expression[:]
 
+        # FIXME: it can be better
         for index, item in enumerate(result):
             if type(item) is list:
                 result[index] = self.join(item)
@@ -65,15 +66,15 @@ class FunctionParser:
                 if item == f:
                     result[index] = [result[index], result[index + 1]]
                     del result[index + 1]
-                    index -= 1
 
+        # FIXME: it can be better
         for symbol in self.symbols:
-            for index, item in enumerate(result):
-                if item in symbol:
-                    result[index - 1] = [result[index], [result[index - 1], result[index + 1]]]
-                    del result[index]
-                    del result[index]
-                    index -= 2
+            while any(x in symbol for x in result):
+                for index, item in enumerate(result):
+                    if item in symbol:
+                        result[index - 1] = [result[index], [result[index - 1], result[index + 1]]]
+                        del result[index]
+                        del result[index]
 
         return result
 
@@ -88,33 +89,36 @@ class FunctionParser:
         result = self.remove_empty_elements(result)
         result = self.parse_inequalities(result)
         result = self.remove_braces(result)
+        result = forEach(result, lambda tab, index: tab.insert(0, '0'), lambda tab, index: tab[0] == '-')
         result = self.join(result)
         result = self.remove_surplus_lists(result)
+        result = forEach(result, self.remove_surplus_lists)
 
-        # convert numbers from string to float
         result = forEach(result, lambda item: float(item), lambda item: item.isdigit())
         return result
 
     @staticmethod
     def parse_inequalities(expression):
         result = expression[:]
-        for i in range(len(result)-1, -1, -1):
+        for i in range(len(result) - 1, -1, -1):
             if result[i] is '=':
-                result[i] = result[i-1]+result[i]
-                del result[i-1]
+                result[i] = result[i - 1] + result[i]
+                del result[i - 1]
                 return result
         return result
 
     def remove_surplus_lists(self, expression):
-        if type(expression) is list:
-            if len(expression) is 1:
-                if type(expression[0]) is list:
-                    if len(expression[0]) is 1:
-                        return self.remove_surplus_lists(expression[0])
-                    else:
-                        return expression[0]
+        result = expression[:]
 
-        return expression
+        if type(result) is list:
+            if len(result) is 1:
+                return self.remove_surplus_lists(result[0])
+            else:
+                for index, item in enumerate(result):
+                    if type(item) is list:
+                        result[index] = self.remove_surplus_lists(result[index])
+
+        return result
 
     def get_operators(self):
         result = []

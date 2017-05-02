@@ -1,6 +1,8 @@
 from function_parser import FunctionParser as Parser
 from iterator import forEach
 import math
+from random import uniform
+import threading
 
 
 class Executor:
@@ -21,7 +23,8 @@ class Executor:
             '<=': lambda a, b: a <= b,
             '>=': lambda a, b: a >= b,
             '!': math.factorial,
-            'sum': sum,
+            'sum': lambda *elements: sum(elements),
+            'abs': lambda number: abs(number),
             'sin': math.sin,
             'asin': math.asin,
             'asinh': math.asinh,
@@ -44,12 +47,17 @@ class Executor:
         }
         self.end_function = None
         self.equations = []
-        self.epsilon = 0.1**6
+        self.epsilon = 0.1 ** 6
+        self.number_of_threads = 10
         self.maximize = True
         self.multi_threading = False
+        self.radian = 1000.0
 
     def add(self, equation):
         self.equations.append(equation)
+
+    def set_radian(self, radian):
+        self.radian = radian
 
     def remove(self, index):
         try:
@@ -63,18 +71,13 @@ class Executor:
     def set_end_function(self, equation):
         self.end_function = equation
 
-    @staticmethod
-    def find_parameters(equation):
-        result = []
-        return result
-
     # TODO finish
     def create_custom_function(self, name, body):
         args = self.find_parameters(body)
         function_name = name[:]
         for arg in body:
             args += arg + ","
-        args = args[:len(args)-1]
+        args = args[:len(args) - 1]
 
         exec("def " + function_name + "(" + args + "):\n\t")
         self.functions[function_name] = name
@@ -117,7 +120,7 @@ class Executor:
 
     def calculate(self, equation):
         result = equation[:]
-
+        # FIXME: it can be better
         try:
             if type(result[1][0]) is list:
                 result[1][0] = self.calculate(result[1][0])
@@ -133,26 +136,59 @@ class Executor:
         return self.functions[result[0]](*result[1])
 
     def execute(self):
-        # parse string equations to list representation
+        # initialize
+        radian = self.radian
+
+        # parse string equations to list representations
         equations = forEach(self.equations, lambda item: self.parser.parse(item), recursion=False)
+        end_function = self.parser.parse(self.end_function)
 
         # change constant symbols to matching floats
-        equations = forEach(equations, lambda item: self.symbols[item], lambda item: item in self.symbols.keys())
+        equations = self.fill_variables(equations, self.symbols)
 
-        # find decision variables
         variables = self.get_decision_variables()
 
+        best_result = {key: 0.0 for key in variables}
+        best_solution = self.calculate(self.fill_variables(end_function, best_result))
 
-        print(equations)
-        return equations
+        if self.multi_threading:
+            threads = (threading.Thread(), ) * self.number_of_threads
 
+        def number_of_samples():
+            return int((radian * 2.5) ** len(variables))
 
-if __name__ == "__main__":
-    executor = Executor()
-    executor.end_function = "3*2^200+(2*y)+9*z+4*sin(q)"
+        def random_values():
+            """:return point inside figure, where best_solution is center"""
+            return {key: uniform(best_result[key] - radian, best_result[key] + radian) for key in variables}
 
-    exp = executor.parser.parse("4*x1 + x2 + 2*x3 <= 11")
+        # end of initialization
 
-    print(exp, end=" = ")
-    print(executor.calculate(executor.fill_variables(exp, {'x1': 2.3, 'x2': 5.0, 'x3': 9.3})))
+        while radian - self.epsilon > 0:
+            points = [random_values() for i in range(number_of_samples())]
 
+            solutions = []
+            excluded = []
+            for index, point in enumerate(points):
+                if not self.multi_threading:
+                    if all([self.calculate(self.fill_variables(equation, point)) for equation in equations]):
+                        solutions.append(point)
+                    else:
+                        excluded.append(point)
+                else:
+                    pass
+
+            for solution in solutions:
+                tmp = self.calculate(self.fill_variables(end_function, solution))
+                if self.maximize:
+                    is_positive_difference = tmp > best_solution
+                else:
+                    is_positive_difference = tmp < best_solution
+
+                if is_positive_difference:
+                    best_solution = tmp
+                    best_result = solution
+
+            radian *= 0.925
+            print(radian, ":", best_result)
+
+        return best_result

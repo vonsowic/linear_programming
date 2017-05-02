@@ -10,7 +10,10 @@ class Interpreter:
             'add': self.executor.add,
             'end': self.executor.set_end_function,
             'epsilon': self.executor.set_epsilon,
+            'radian': lambda radian: self.executor.set_radian(float(radian)),
+            'centre': lambda *centre: self.executor.set_centre(centre),
             'del': self.executor.remove,
+            'load': self.load,
             'custom': self.executor.create_custom_function,
             'maximize': self.set_end_func_type,
             'multithreading': self.set_multi_threading_type,
@@ -46,16 +49,25 @@ class Interpreter:
             print(index, ':', item)
         print("Maximize:", self.executor.maximize)
         print("End function:", self.executor.end_function)
+        print("Radian:", self.executor.radian)
         print("Epsilon:", self.executor.epsilon)
         print("Multi threading:", self.executor.multi_threading)
 
     @staticmethod
     def unknown_command(command):
-        print("Unknown command:", command, ".Type 'help' for help.")
+        print("Unknown command: " + command + ". Type 'help' for help.")
 
     @staticmethod
     def wrong_number():
         print("Wrong number of arguments.")
+
+    def load(self, filename):
+        try:
+            with open(filename) as file:
+                for line in file.readlines():
+                    self.execute(line.rstrip('\n'))
+        except FileNotFoundError as e:
+            print(str(e))
 
     def execute(self, command):
         command = command.split(' ', 1)
@@ -66,25 +78,21 @@ class Interpreter:
 
         command = command[0]
 
+        result = None
         try:
-            self.commands[command](*args)
+            result = self.commands[command](*args)
         except KeyError:
             print(self.unknown_command(command))
         except TypeError:
             print(self.wrong_number())
 
+        if result is not None:
+            print(result)
+
 
 if __name__ == "__main__":
     interpreter = Interpreter()
-    interpreter.execute("end 5*x1 + 4*x2 + 3*x3")
-    interpreter.execute("add 2*x1 + 3*x2 + x3 <= 5")
-    interpreter.execute("add 4*x1 + x2 + 2*x3 <= 11")
-    interpreter.execute("add 3*x1 + 4*x2 + 2*x3 <= 8")
-    interpreter.execute("add x1 >= 0")
-    interpreter.execute("add x2 >= 0")
-    interpreter.execute("add x3 >= 0")
-    interpreter.execute("maximize 1")
-    interpreter.execute("show")
-    interpreter.execute("execute")
+    interpreter.execute("load cw/2ex.lp")
+    # interpreter.execute("exit")
     while True:
         interpreter.execute(input("> "))
