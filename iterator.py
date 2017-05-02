@@ -6,11 +6,21 @@ def forEach(iterable, function, condition=lambda x: True, recursion=True):
             if res is not None:
                 result[index] = res
         else:
-            if condition(item):
-                res = function(item)
+            try:
+                tmp_condition = condition(item)
+            except TypeError:
+                tmp_condition = condition(result, index)
+
+            if tmp_condition:
+                try:
+                    res = function(item)
+                except TypeError:
+                    res = function(result, index)
+
                 if res is not None:
                     result[index] = res
     return result
+
 
 if __name__ == "__main__":
     l = ['a', 'b', ['c', 'd', ['e', 'f'], 'g', ['h', 'i', ['j', 'k', 'l'], 'm', 'n', 'o'], 'p'], 1, 2, 3]
@@ -21,6 +31,7 @@ if __name__ == "__main__":
             return True
         else:
             return False
+
 
     def assignRandomNumber(arg):
         import random
