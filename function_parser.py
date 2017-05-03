@@ -13,8 +13,7 @@ class FunctionParser:
         self.functions = []
 
     @staticmethod
-    def remove_spaces(expression):
-        return ''.join(expression.split())
+    def remove_spaces(expression): return expression.replace(' ', '')
 
     @staticmethod
     def remove_braces(expression):
@@ -94,7 +93,7 @@ class FunctionParser:
         result = self.remove_surplus_lists(result)
         result = forEach(result, self.remove_surplus_lists)
 
-        result = forEach(result, lambda item: float(item), lambda item: item.isdigit())
+        result = forEach(result, lambda item: float(item), lambda item: item.replace('.', '', 1).isdigit())
         return result
 
     @staticmethod

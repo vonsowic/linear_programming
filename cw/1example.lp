@@ -7,4 +7,3 @@ add x1 >= 0
 add x2 >= 0
 add x3 >= 0
 maximize 1
-execute

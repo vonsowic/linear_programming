@@ -2,7 +2,9 @@ from function_parser import FunctionParser as Parser
 from iterator import forEach
 import math
 from random import uniform
-import threading
+from threading import Thread
+from threading import Lock
+from queue import Queue
 
 
 class Executor:
@@ -41,17 +43,23 @@ class Executor:
             'log10': math.log10,
         }
         self.parser.functions = self.get_functions()
+
         self.symbols = {
             'pi': math.pi,
             'e': math.e,
+            'inf': math.inf,
+            'nan': math.nan,
+            'tau': math.tau,
         }
+
         self.end_function = None
         self.equations = []
         self.epsilon = 0.1 ** 6
         self.number_of_threads = 10
         self.maximize = True
-        self.multi_threading = False
+        self.multi_threading = True
         self.radian = 1000.0
+        self.centre = 0.0
 
     def add(self, equation):
         self.equations.append(equation)
@@ -73,13 +81,12 @@ class Executor:
 
     # TODO finish
     def create_custom_function(self, name, body):
-        args = self.find_parameters(body)
-        function_name = name[:]
-        for arg in body:
-            args += arg + ","
-        args = args[:len(args) - 1]
+        if type(body) is str:
+            body = self.parser.parse(body)
 
-        exec("def " + function_name + "(" + args + "):\n\t")
+        function_name = name
+
+        exec("def " + function_name + "(*args):\n\tvar = self.get_decisibody ")
         self.functions[function_name] = name
 
     def clear(self):
@@ -90,6 +97,13 @@ class Executor:
 
     def get_functions(self):
         return [key for key, func in self.functions.items() if key not in self.operators]
+
+    def set_number_of_threads(self, size):
+        self.number_of_threads = size
+
+    def set_range(self, begging, end):
+        self.radian = abs(end - begging) / 2
+        self.centre = (end - begging)
 
     def get_decision_variables(self, expression=None):
         if expression is None:
@@ -119,7 +133,11 @@ class Executor:
         return forEach(equation, lambda x: values[x], lambda x: x in values)
 
     def calculate(self, equation):
-        result = equation[:]
+        if type(equation) is str:
+            result = self.parser.parse(equation)
+        else:
+            result = equation[:]
+
         # FIXME: it can be better
         try:
             if type(result[1][0]) is list:
@@ -148,47 +166,75 @@ class Executor:
 
         variables = self.get_decision_variables()
 
-        best_result = {key: 0.0 for key in variables}
-        best_solution = self.calculate(self.fill_variables(end_function, best_result))
+        initial_point = {key: self.centre for key in variables}
 
+        fields = self.ExecuteFields(
+            initial_point,
+            self.calculate(self.fill_variables(end_function, initial_point))
+        )
+
+        lock = Lock()
         if self.multi_threading:
-            threads = (threading.Thread(), ) * self.number_of_threads
+            queue = Queue()
+
+            def threads_task():
+                while True:
+                    item = queue.get()
+                    if item is None:
+                        break
+
+                    item()
+                    queue.task_done()
+
+            threads = []
+            for i in range(self.number_of_threads):
+                t = Thread(target=threads_task)
+                t.daemon = True
+                threads.append(t)
+                t.start()
 
         def number_of_samples():
-            return int((radian * 2.5) ** len(variables))
+            return int((radian * 2.5 + 100) ** len(variables))
 
         def random_values():
             """:return point inside figure, where best_solution is center"""
-            return {key: uniform(best_result[key] - radian, best_result[key] + radian) for key in variables}
+            return {key: uniform(fields.best_point[key] - radian, fields.best_point[key] + radian) for key in variables}
+
+        def find_possible_result():
+            point = random_values()
+            if all([self.calculate(self.fill_variables(equation, point)) for equation in equations]):
+                tmp_result = self.calculate(self.fill_variables(end_function, point))
+
+                with lock:
+                    if self.maximize:
+                        is_positive_difference = tmp_result > fields.best_result
+                    else:
+                        is_positive_difference = tmp_result < fields.best_result
+
+                    if is_positive_difference:
+                        fields.best_point = point
+                        fields.best_result = tmp_result
 
         # end of initialization
 
         while radian - self.epsilon > 0:
-            points = [random_values() for i in range(number_of_samples())]
 
-            solutions = []
-            excluded = []
-            for index, point in enumerate(points):
-                if not self.multi_threading:
-                    if all([self.calculate(self.fill_variables(equation, point)) for equation in equations]):
-                        solutions.append(point)
-                    else:
-                        excluded.append(point)
+            for index in range(number_of_samples()):
+                if self.multi_threading:
+                    queue.put(find_possible_result)
                 else:
-                    pass
+                    find_possible_result()
 
-            for solution in solutions:
-                tmp = self.calculate(self.fill_variables(end_function, solution))
-                if self.maximize:
-                    is_positive_difference = tmp > best_solution
-                else:
-                    is_positive_difference = tmp < best_solution
+            if self.multi_threading:
+                queue.join()
 
-                if is_positive_difference:
-                    best_solution = tmp
-                    best_result = solution
-
+            print(radian, ":", fields.best_point, " - times:", number_of_samples())
             radian *= 0.925
-            print(radian, ":", best_result)
 
-        return best_result
+        return fields.best_point
+
+    class ExecuteFields:
+
+        def __init__(self, point, result):
+            self.best_point = point
+            self.best_result = result

@@ -1,5 +1,7 @@
+#!/usr/bin/env python
+
 from executor import Executor
-from sys import exit
+from sys import exit, argv
 from function_parser import FunctionParser as Parser
 
 
@@ -11,24 +13,28 @@ class Interpreter:
             'end': self.executor.set_end_function,
             'epsilon': self.executor.set_epsilon,
             'radian': lambda radian: self.executor.set_radian(float(radian)),
-            'centre': lambda *centre: self.executor.set_centre(centre),
+            'range': lambda begging, end: self.executor.set_range(float(begging), float(end)),
             'del': self.executor.remove,
             'load': self.load,
             'custom': self.executor.create_custom_function,
             'maximize': self.set_end_func_type,
             'multithreading': self.set_multi_threading_type,
+            'sizethreads': lambda size: self.executor.set_number_of_threads(int(size)),
             'execute': self.executor.execute,
+            'calculate': self.executor.calculate,
             'clear': self.executor.clear,
             'show': self.show,
             'help': self.print_help,
             'exit': exit,
+            '#': self.ignore,
+            '': self.ignore,
         }
 
-    def set_end_func_type(self, boolean):
-        self.executor.maximize = self.set_bool_type(boolean)
+    def ignore(self, *args): pass
 
-    def set_multi_threading_type(self, boolean):
-        self.executor.multi_threading = self.set_bool_type(boolean)
+    def set_end_func_type(self, boolean): self.executor.maximize = self.set_bool_type(boolean)
+
+    def set_multi_threading_type(self, boolean): self.executor.multi_threading = self.set_bool_type(boolean)
 
     @staticmethod
     def set_bool_type(boolean):
@@ -54,12 +60,7 @@ class Interpreter:
         print("Multi threading:", self.executor.multi_threading)
 
     @staticmethod
-    def unknown_command(command):
-        print("Unknown command: " + command + ". Type 'help' for help.")
-
-    @staticmethod
-    def wrong_number():
-        print("Wrong number of arguments.")
+    def unknown_command(command): print("Unknown command: " + command + ". Type 'help' for help.")
 
     def load(self, filename):
         try:
@@ -83,16 +84,18 @@ class Interpreter:
             result = self.commands[command](*args)
         except KeyError:
             print(self.unknown_command(command))
-        except TypeError:
-            print(self.wrong_number())
+        except TypeError as e:
+            print(command + ": " + str(e))
 
         if result is not None:
-            print(result)
+            print(str(result))
 
 
 if __name__ == "__main__":
     interpreter = Interpreter()
-    interpreter.execute("load cw/2ex.lp")
-    # interpreter.execute("exit")
+
+    for arg in argv[1:]:
+        interpreter.execute("load " + arg)
+
     while True:
         interpreter.execute(input("> "))
