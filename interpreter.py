@@ -23,6 +23,7 @@ class Interpreter:
             'execute': self.executor.execute,
             'calculate': self.executor.calculate,
             'clear': self.executor.clear,
+            'clearall': self.executor.clear_all,
             'show': self.show,
             'help': self.print_help,
             'exit': exit,

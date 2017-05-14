@@ -13,7 +13,5 @@ add x2 >= 0
 radian 3
 
 multithreading 1
-sizethreads 4
+sizethreads 8
 show
-execute
-exit

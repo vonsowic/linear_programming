@@ -52,8 +52,18 @@ class Executor:
             'tau': math.tau,
         }
 
-        self.end_function = None
         self.equations = []
+        self.end_function = None
+        self.epsilon = None
+        self.number_of_threads = None
+        self.maximize = True
+        self.multi_threading = True
+        self.radian = None
+        self.centre = None
+        self.initialize()
+
+    def initialize(self):
+        self.end_function = None
         self.epsilon = 0.1 ** 6
         self.number_of_threads = 10
         self.maximize = True
@@ -62,6 +72,7 @@ class Executor:
         self.centre = 0.0
 
     def add(self, equation):
+        u"""Adds "subject to" function"""
         self.equations.append(equation)
 
     def set_radian(self, radian):
@@ -91,6 +102,10 @@ class Executor:
 
     def clear(self):
         self.equations.clear()
+
+    def clear_all(self):
+        self.clear()
+        self.initialize()
 
     def get_operators(self):
         return self.functions.keys()
@@ -175,19 +190,22 @@ class Executor:
 
         lock = Lock()
         if self.multi_threading:
-            queue = Queue()
 
             def threads_task():
                 while True:
-                    item = queue.get()
-                    if item is None:
-                        break
+                    with lock:
+                        next_iteration = fields.task_index > 0
+                        print("Next iteration", next_iteration)
 
-                    item()
-                    queue.task_done()
+                    if next_iteration:
+                        print("Next iteration is true")
+                        with lock:
+                            fields.task_index -= 1
+                        find_possible_result()
 
             threads = []
             for i in range(self.number_of_threads):
+                print("initialize thread")
                 t = Thread(target=threads_task)
                 t.daemon = True
                 threads.append(t)
@@ -219,14 +237,17 @@ class Executor:
 
         while radian - self.epsilon > 0:
 
-            for index in range(number_of_samples()):
-                if self.multi_threading:
-                    queue.put(find_possible_result)
-                else:
+            if self.multi_threading:
+                fields.task_index = number_of_samples()
+                print("Task index assging:", fields.task_index)
+            else:
+                for index in range(number_of_samples()):
                     find_possible_result()
 
             if self.multi_threading:
-                queue.join()
+                for thread in threads:
+                    print("wait to join")
+                    thread.join()
 
             print(radian, ":", fields.best_point, " - times:", number_of_samples())
             radian *= 0.925
@@ -238,3 +259,4 @@ class Executor:
         def __init__(self, point, result):
             self.best_point = point
             self.best_result = result
+            self.task_index = 0
