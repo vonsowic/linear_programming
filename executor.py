@@ -154,17 +154,21 @@ class Executor:
             result = equation[:]
 
         # FIXME: it can be better
-        try:
-            if type(result[1][0]) is list:
-                result[1][0] = self.calculate(result[1][0])
-        except TypeError:
-            pass
+        if type(result[1]) is list:
+            if len(result[1]) > 0:
+                try:
+                    if type(result[1][0]) is list:
+                        result[1][0] = self.calculate(result[1][0])
+                except TypeError:
+                    pass
 
-        try:
-            if type(result[1][1]) is list:
-                result[1][1] = self.calculate(result[1][1])
-        except TypeError:
-            pass
+        if type(result[1]) is list:
+            if len(result[1]) is 2:
+                try:
+                    if type(result[1][1]) is list:
+                        result[1][1] = self.calculate(result[1][1])
+                except TypeError:
+                    pass
 
         return self.functions[result[0]](*result[1])
 
@@ -190,29 +194,26 @@ class Executor:
 
         lock = Lock()
         if self.multi_threading:
+            queue = Queue()
 
             def threads_task():
                 while True:
-                    with lock:
-                        next_iteration = fields.task_index > 0
-                        print("Next iteration", next_iteration)
+                    item = queue.get()
+                    if item is None:
+                        break
 
-                    if next_iteration:
-                        print("Next iteration is true")
-                        with lock:
-                            fields.task_index -= 1
-                        find_possible_result()
+                    item()
+                    queue.task_done()
 
             threads = []
             for i in range(self.number_of_threads):
-                print("initialize thread")
                 t = Thread(target=threads_task)
                 t.daemon = True
                 threads.append(t)
                 t.start()
 
         def number_of_samples():
-            return int((radian * 2.5 + 100) ** len(variables))
+            return int((radian + 10) ** len(variables))
 
         def random_values():
             """:return point inside figure, where best_solution is center"""
@@ -237,17 +238,14 @@ class Executor:
 
         while radian - self.epsilon > 0:
 
-            if self.multi_threading:
-                fields.task_index = number_of_samples()
-                print("Task index assging:", fields.task_index)
-            else:
-                for index in range(number_of_samples()):
+            for index in range(number_of_samples()):
+                if self.multi_threading:
+                    queue.put(find_possible_result)
+                else:
                     find_possible_result()
 
             if self.multi_threading:
-                for thread in threads:
-                    print("wait to join")
-                    thread.join()
+                queue.join()
 
             print(radian, ":", fields.best_point, " - times:", number_of_samples())
             radian *= 0.925
